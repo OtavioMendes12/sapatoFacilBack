@@ -11,6 +11,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins("http://localhost:3000")
+                .allowedOrigins("https://sapato-facil-0c8377071d00.herokuapp.com/")
                 .allowedMethods("GET", "POST", "DELETE", "PUT", "OPTIONS");
     }
 }
