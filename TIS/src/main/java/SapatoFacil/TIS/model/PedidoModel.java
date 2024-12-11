@@ -34,6 +34,7 @@ public class PedidoModel {
     private LocalDateTime dataVenda;
     private Double total;
     private String status;
+
     @Lob
     private byte[] comprovante;
 

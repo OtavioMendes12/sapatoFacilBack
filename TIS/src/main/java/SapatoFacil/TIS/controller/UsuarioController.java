@@ -2,6 +2,7 @@ package SapatoFacil.TIS.controller;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import SapatoFacil.TIS.dto.*;
 import SapatoFacil.TIS.infra.security.TokenService;
@@ -48,7 +49,7 @@ public class UsuarioController {
             }
     )
     @PostMapping("/cadastrar")
-    public ResponseEntity cadastrarusuario(@Valid @RequestBody RegisterRequestDTO usuario) {
+    public ResponseEntity<ResponseDTO> cadastrarusuario(@Valid @RequestBody RegisterRequestDTO usuario) {
         Optional<UsuarioModel> user = this.usuarioRepository.findByCpf(usuario.cpf());
         if(user.isEmpty()) {
             UsuarioModel newUser = new UsuarioModel();
@@ -77,9 +78,12 @@ public class UsuarioController {
             }
     )
     @GetMapping("/listar")
-    public ResponseEntity<List<UsuarioModel>> listarUsuarios() {
+    public ResponseEntity<List<UsuarioDTO>> listarUsuarios() {
         List<UsuarioModel> usuarios = usuarioService.listarUsuarios();
-        return new ResponseEntity<>(usuarios, HttpStatus.OK);
+        List<UsuarioDTO> usuariosDTO = usuarios.stream()
+                .map(UsuarioDTO::fromModel)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(usuariosDTO, HttpStatus.OK);
     }
 
     @Operation(description = "Busca o usuario pelo ID")
@@ -90,9 +94,9 @@ public class UsuarioController {
             }
     )
     @GetMapping("/buscar/{id}")
-    public ResponseEntity<UsuarioModel> buscarUsuario(@PathVariable Long id) {
+    public ResponseEntity<UsuarioDTO> buscarUsuario(@PathVariable Long id) {
         UsuarioModel usuario = usuarioService.buscarPorId(id);
-        return usuario != null ? ResponseEntity.ok(usuario) : ResponseEntity.notFound().build();
+        return usuario != null ? ResponseEntity.ok(UsuarioDTO.fromModel(usuario)) : ResponseEntity.notFound().build();
     }
 
     @Operation(description = "Deleta o usuario pelo ID")
@@ -116,7 +120,7 @@ public class UsuarioController {
             }
     )
     @PostMapping("/login")
-    public ResponseEntity loginUsuario(@RequestBody LoginRequestDTO usuario) {
+    public ResponseEntity<ResponseDTO> loginUsuario(@RequestBody LoginRequestDTO usuario) {
         UsuarioModel user = this.usuarioRepository.findByCpf(usuario.cpf()).orElseThrow(() -> new RuntimeException("User not found"));
         if(passwordEncoder.matches(usuario.senha(), user.getSenha())) {
             String token = this.tokenService.generateToken(user);
@@ -124,34 +128,30 @@ public class UsuarioController {
         }
         return ResponseEntity.badRequest().build();
     }
+
     @PutMapping("/atualizar")
-    public ResponseEntity<UsuarioModel> atualizarUsuario(@RequestBody UsuarioModel usuarioAtualizado, Authentication authentication) {
-
+    public ResponseEntity<UsuarioDTO> atualizarUsuario(@RequestBody UsuarioModel usuarioAtualizado, Authentication authentication) {
         String cpfUsuarioAutenticado = authentication.name();
-
         UsuarioModel usuarioAtualizadoResponse = usuarioService.atualizarUsuario(cpfUsuarioAutenticado, usuarioAtualizado);
-
-        return new ResponseEntity<>(usuarioAtualizadoResponse, HttpStatus.OK);
+        return new ResponseEntity<>(UsuarioDTO.fromModel(usuarioAtualizadoResponse), HttpStatus.OK);
     }
 
     @PostMapping("/recuperar-senha")
     public ResponseEntity<String> verificarCpfEmail(@RequestBody RecuperacaoSenhaRequestDTO request) {
-        try{
+        try {
             String token = usuarioService.verificarCpfEmail(request);
             return new ResponseEntity<>(token, HttpStatus.OK);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao recuperar senha - Mensagem: "+ e.getMessage());
-
         }
-
     }
 
     @PostMapping("/redefinir-senha")
     public ResponseEntity<String> redefinirSenha(@RequestBody RedefinirSenhaRequestDTO request) {
-        try{
+        try {
             usuarioService.redefinirSenha(request);
             return new ResponseEntity<>("Senha alterada com sucesso", HttpStatus.OK);
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao redefinir senha - Mensagem: "+ e.getMessage());
         }
     }

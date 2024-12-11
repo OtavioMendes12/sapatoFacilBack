@@ -8,9 +8,9 @@ import SapatoFacil.TIS.repository.ProdutoRepository;
 import SapatoFacil.TIS.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-
-
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -21,59 +21,49 @@ public class CarrinhoService {
     private ProdutoRepository produtoRepository;
     @Autowired
     private CarrinhoRepository carrinhoRepository;
+
+    @Transactional
     public void adicionarProdutoAoCarrinho(Long id, Long produtoId) {
         UsuarioModel usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
-        ProdutoModel produto = produtoRepository.findById(produtoId)
+        ProdutoModel produto = produtoRepository.findByIdWithoutFoto(produtoId)
                 .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
+        
         if (produto.getQuantidadeEstoque() <= 0) {
             throw new IllegalArgumentException("Produto sem estoque");
         }
+        
         produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - 1);
         produtoRepository.save(produto);
+        
         CarrinhoModel carrinho = usuario.getCarrinho();
         if (carrinho == null) {
             carrinho = new CarrinhoModel();
             carrinho.setUsuario(usuario);
+            carrinho.setProdutos(new ArrayList<>());
         }
 
-        List<ProdutoModel> produtos = carrinho.getProdutos();
-        produtos.add(produto);
-        carrinho.setProdutos(produtos);
-
+        carrinho.getProdutos().add(produto);
         carrinhoRepository.save(carrinho);
     }
 
+    @Transactional(readOnly = true)
     public List<ProdutoModel> listarCarrinhoPorCpf(String cpfUsuario) {
-        UsuarioModel usuario = usuarioRepository.findByCpf(cpfUsuario)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
-
-        CarrinhoModel carrinho = usuario.getCarrinho();
-        List<ProdutoModel> produtos = carrinho.getProdutos();
-        if (carrinho == null) {
-            throw new IllegalArgumentException("Carrinho não encontrado");
-        }
-
-        return produtos;
+        CarrinhoModel carrinho = carrinhoRepository.findByUsuarioCpf(cpfUsuario)
+                .orElseThrow(() -> new IllegalArgumentException("Carrinho não encontrado"));
+        
+        return carrinho.getProdutos();
     }
 
+    @Transactional
     public void removerProdutoDoCarrinho(String cpfUsuario, Long produtoId) {
-        UsuarioModel usuario = usuarioRepository.findByCpf(cpfUsuario)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+        CarrinhoModel carrinho = carrinhoRepository.findByUsuarioCpf(cpfUsuario)
+                .orElseThrow(() -> new IllegalArgumentException("Carrinho não encontrado"));
 
-        CarrinhoModel carrinho = usuario.getCarrinho();
-        if (carrinho == null) {
-            throw new IllegalArgumentException("Carrinho não encontrado");
-        }
-
-        ProdutoModel produto = produtoRepository.findById(produtoId)
+        ProdutoModel produto = produtoRepository.findByIdWithoutFoto(produtoId)
                 .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
 
-
-        List<ProdutoModel> produtos = carrinho.getProdutos();
-        if (produtos.contains(produto)) {
-            produtos.remove(produto);
-            carrinho.setProdutos(produtos);
+        if (carrinho.getProdutos().remove(produto)) {
             carrinhoRepository.save(carrinho);
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() + 1);
             produtoRepository.save(produto);

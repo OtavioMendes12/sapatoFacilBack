@@ -3,8 +3,10 @@ package SapatoFacil.TIS.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @Entity
 public class ProdutoModel {
     @Id
@@ -34,10 +36,21 @@ public class ProdutoModel {
     @NotBlank(message = "A cor do produto não pode ser vazia")
     private String cor;
 
+    @Basic(fetch = FetchType.LAZY)
     @Lob
     private byte[] foto;
 
     public enum Genero {
         MASCULINO, FEMININO, UNISSEX
+    }
+
+    public ProdutoModel(Long id, String nome, Double valor, Integer quantidadeEstoque, Integer tamanho, Genero genero, String cor) {
+        this.id = id;
+        this.nome = nome;
+        this.valor = valor;
+        this.quantidadeEstoque = quantidadeEstoque;
+        this.tamanho = tamanho;
+        this.genero = genero;
+        this.cor = cor;
     }
 }
