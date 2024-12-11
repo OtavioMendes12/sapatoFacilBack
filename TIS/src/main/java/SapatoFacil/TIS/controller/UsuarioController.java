@@ -56,7 +56,7 @@ public class UsuarioController {
             newUser.setEmail(usuario.email());
             newUser.setNome(usuario.nome());
             newUser.setCpf(usuario.cpf());
-            newUser.setRole(usuario.roleEnum());
+            newUser.setRole(usuario.role());
             this.usuarioRepository.save(newUser);
             CarrinhoModel carrinho = new CarrinhoModel();
             carrinho.setUsuario(newUser);
