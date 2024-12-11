@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = { Exception.class })
     protected ResponseEntity<Object> handleGeneralException(Exception ex, WebRequest request) {
 
-        String errorMessage = "Ocorreu um erro interno. Entre em contato com o suporte.";
+        String errorMessage = ex.getMessage();
         return new ResponseEntity<>(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
